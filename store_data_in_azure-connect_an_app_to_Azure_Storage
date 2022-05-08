@@ -1,8 +1,9 @@
 ###### Important: To use Azure CLI at Azure Portal you must create a first Storage Account with a File share entity enabled
 
 ## Create a new app to work with Azure storage
+## https://docs.microsoft.com/en-us/learn/modules/connect-an-app-to-azure-storage/
 
-### Create a .NET Core application
+### Unit 3 of 12: Create a .NET Core application
 #### C# option
 
 dotnet new console --name PhotoSharingApp
@@ -39,7 +40,7 @@ EOF
 node index.js
 
 
-## Create a storage account
+### Unit 4 of 12: Create a storage account
 
 ###### Important: set env variables before running command to create storage account below
 ###### To check which Resource Groups exists: az group list
@@ -49,3 +50,110 @@ az storage account create \
   --location $LOCATION \
   --sku Standard_LRS \
   --name $STGACCNAME
+
+
+### Unit 6 of 12: Add the storage client library to your app
+
+#### Preparation
+
+cd ..
+
+mv PhotoSharingApp PhotoSharingApp_JS
+
+#### C# option
+
+cd PhotoSharingApp_C#
+
+dotnet add package Azure.Storage.Blobs
+
+dotnet run
+
+#### JavaScript option
+
+cd ../PhotoSharingApp_JS
+
+npm install @azure/storage-blob --save
+
+node index.js
+
+
+
+### Unit 8 of 12: Add Azure Storage configuration to your app
+
+#### C# option
+
+cd ../PhotoSharingApp_C#
+
+cat << EOF > appsettings.json
+{
+    "ConnectionStrings": {
+        "StorageAccount": "<value>"
+    }
+}
+EOF
+
+STGACCENDPOINT=$(az storage account show-connection-string \
+  --resource-group $RESOURCEGROUPNAME \
+  --query connectionString \
+  --name $STGACCNAME)
+
+sed -i 's@"<value>"@'$STGACCENDPOINT'@' appsettings.json
+
+###### Note: I still didn't know how to edit multiple lines through sed/awk
+
+vi PhotoSharingApp.csproj
+
+###### Note: add following <None> block inside <ItemGroup> block
+<ItemGroup>
+    <None Update="appsettings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+</ItemGroup>
+###### End Note
+
+dotnet add package Microsoft.Extensions.Configuration.Json
+
+vi Program.cs
+
+###### Note: At the top of the file is a using System; line. Immediately below that line, add the following lines of code:
+using Microsoft.Extensions.Configuration;
+using System.IO;
+
+###### Note: Replace the contents of the Main method (the line that contains "Hello World!") with the following code:
+var builder = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json");
+
+var configuration = builder.Build();
+
+
+#### JavaScript option
+
+cd ../PhotoSharingApp_JS
+
+AZURE_STORAGE_CONNECTION_STRING=$(az storage account show-connection-string \
+  --resource-group $RESOURCEGROUPNAME \
+  --query connectionString \
+  --name $STGACCNAME)
+
+echo AZURE_STORAGE_CONNECTION_STRING=$(echo $AZURE_STORAGE_CONNECTION_STRING) > .env
+
+npm install dotenv --save
+
+###### Note: I still didn't know how to edit multiple lines through sed/awk
+vi index.js
+
+###### Note: At the top of the file, is a line of code #!/usr/bin/env node. Underneath that line, add following line of code:
+
+require('dotenv').config();
+
+
+
+### Unit 9 of 12: Connect your application to your Azure Storage account
+
+#### C# option
+
+
+
+#### JavaScript option
+
