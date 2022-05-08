@@ -1,0 +1,51 @@
+###### Important: To use Azure CLI at Azure Portal you must create a first Storage Account with a File share entity enabled
+
+## Create a new app to work with Azure storage
+
+### Create a .NET Core application
+#### C# option
+
+dotnet new console --name PhotoSharingApp
+
+cd PhotoSharingApp
+
+dotnet run
+
+###### The output "Hello World!" should display in the console.
+
+
+###### Now, we are going to change to JavaScript option
+
+mv PhotoSharingApp/ PhotoSharingApp_C#
+
+
+#### JavaScript option
+
+mkdir PhotoSharingApp
+
+cd PhotoSharingApp
+npm init -y
+
+cat << EOF > index.js
+#!/usr/bin/env node
+
+function main() {
+    console.log('Hello, World!');
+}
+
+main();
+EOF
+
+node index.js
+
+
+## Create a storage account
+
+###### Important: set env variables before running command to create storage account below
+###### To check which Resource Groups exists: az group list
+
+az storage account create \
+  --resource-group $RESOURCEGROUPNAME \
+  --location $LOCATION \
+  --sku Standard_LRS \
+  --name $STGACCNAME
