@@ -109,7 +109,8 @@ vi PhotoSharingApp.csproj
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 </ItemGroup>
-###### End Note
+
+###### Save and exit.
 
 dotnet add package Microsoft.Extensions.Configuration.Json
 
@@ -126,6 +127,8 @@ var builder = new ConfigurationBuilder()
 
 var configuration = builder.Build();
 
+###### Save and exit.
+
 
 #### JavaScript option
 
@@ -141,19 +144,135 @@ echo AZURE_STORAGE_CONNECTION_STRING=$(echo $AZURE_STORAGE_CONNECTION_STRING) > 
 npm install dotenv --save
 
 ###### Note: I still didn't know how to edit multiple lines through sed/awk
+
 vi index.js
 
-###### Note: At the top of the file, is a line of code #!/usr/bin/env node. Underneath that line, add following line of code:
+###### Note: At the top of the file, is a line of code #!/usr/bin/env node. 
+####### Underneath that line, add following line of code:
 
 require('dotenv').config();
 
+###### Save and exit.
 
 
 ### Unit 9 of 12: Connect your application to your Azure Storage account
 
 #### C# option
 
+cd ../PhotoSharingApp_C#
+
+vi Program.cs
+
+###### Note: To use the Azure Storage Blobs client library for .NET in your program, 
+####### you need to add a using statement at the top of your program for the Azure.Storage.Blobs namespace.
+
+using Azure.Storage.Blobs;
+
+###### Note: Add the following code to the Main section of your application to get the Azure 
+####### Storage connection string and create the BlobContainerClient object.
+
+var connectionString = configuration.GetConnectionString("StorageAccount");
+string containerName = "photos";
+
+BlobContainerClient container = new BlobContainerClient(connectionString, containerName);
+
+container.CreateIfNotExists();
+
+###### Save and exit.
+
+dotnet run
+
+###### Note: You can verify you have created the container by running the following Azure CLI command. 
+
+az storage container list \
+--account-name $STGACCNAME
 
 
 #### JavaScript option
 
+cd ../PhotoSharingApp_JS
+
+vi index.js
+
+###### Note: Add the following statement immediately after the require('dotenv').config(); statement.
+
+const { BlobServiceClient } = require("@azure/storage-blob");
+
+###### Note: you need to create a BlobServiceClient object in your code by obtaining the storage 
+####### account connection string and passing it to the factory method fromConnectionString 
+####### on the BlobServiceClient object. Add the following lines of code:
+
+const storageAccountConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+const blobServiceClient = BlobServiceClient.fromConnectionString(storageAccountConnectionString);
+
+async function main() {
+  // Create a container (folder) if it does not exist
+  const containerName = 'photos';
+  const containerClient = blobServiceClient.getContainerClient(containerName);
+  const createContainerResponse = await containerClient.createIfNotExists();
+  console.log(`Create container ${containerName} successfully`, createContainerResponse.succeeded);
+}
+
+###### Save and exit.
+
+node index.js
+
+###### Note: You can verify you have created the container by running the following Azure CLI command. 
+
+az storage container list --connection-string $AZURE_STORAGE_CONNECTION_STRING --account-name $STGACCNAME
+
+
+
+### Unit 10 of 12: Upload an image to your Azure Storage account
+
+#### C# option
+
+cd ../PhotoSharingApp_C#
+
+wget https://github.com/MicrosoftDocs/mslearn-connect-app-to-azure-storage/blob/main/images/docs-and-friends-selfie-stick.png?raw=true -O docs-and-friends-selfie-stick.png
+
+vi Program.cs
+
+###### Note: After you have a BlobClient object, you can call the Upload method to upload 
+####### a file to Azure Blob Storage.
+
+string blobName = "docs-and-friends-selfie-stick";
+string fileName = "docs-and-friends-selfie-stick.png";
+BlobClient blobClient = container.GetBlobClient(blobName);
+blobClient.Upload(fileName, true);
+
+var blobs = container.GetBlobs();
+foreach (var blob in blobs)
+{
+    Console.WriteLine($"{blob.Name} --> Created On: {blob.Properties.CreatedOn:yyyy-MM-dd HH:mm:ss}  Size: {blob.Properties.ContentLength}");
+}
+
+###### Save and exit.
+
+dotnet run
+
+
+#### JavaScript option
+
+cd ../PhotoSharingApp_JS
+
+wget https://github.com/MicrosoftDocs/mslearn-connect-app-to-azure-storage/blob/main/images/docs-and-friends-selfie-stick.png?raw=true -O docs-and-friends-selfie-stick.png
+
+vi index.js
+
+###### Note: Add this code to your index.js program immediately after the code that creates the container:
+
+const filename = 'docs-and-friends-selfie-stick.png';
+const blockBlobClient = containerClient.getBlockBlobClient(filename);
+blockBlobClient.uploadFile(filename);
+
+let blobs = containerClient.listBlobsFlat();
+let blob = await blobs.next();
+while (!blob.done) {
+    console.log(`${blob.value.name} --> Created: ${blob.value.properties.createdOn}   Size: ${blob.value.properties.contentLength}`);
+    blob = await blobs.next();
+}
+
+###### Save and exit.
+
+node index.js
